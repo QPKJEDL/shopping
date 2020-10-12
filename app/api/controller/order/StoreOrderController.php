@@ -51,6 +51,10 @@ class StoreOrderController
         if (!is_string($cartId) || !$cartId) return app('json')->fail('请提交购买的商品');
         $uid = $request->uid();
         $cartGroup = StoreCart::getUserProductCartList($uid, $cartId, 1);
+
+        dump($cartGroup);
+
+
         if (count($cartGroup['invalid'])) return app('json')->fail($cartGroup['invalid'][0]['productInfo']['store_name'] . '已失效!');
         if (!$cartGroup['valid']) return app('json')->fail('请提交购买的商品');
         $cartInfo = $cartGroup['valid'];
