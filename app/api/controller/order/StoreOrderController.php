@@ -54,6 +54,14 @@ class StoreOrderController
         if (count($cartGroup['invalid'])) return app('json')->fail($cartGroup['invalid'][0]['productInfo']['store_name'] . '已失效!');
         if (!$cartGroup['valid']) return app('json')->fail('请提交购买的商品');
         $cartInfo = $cartGroup['valid'];
+
+        //判断全选是否为虚实商品混和的
+        $mix=StoreCart::isMixed($cartInfo);
+
+        if($mix){
+            return app('json')->fail('虚拟和实物商品不可同时下单');
+        }
+
         $addr = UserAddress::where('uid', $uid)->where('is_default', 1)->find();
         $priceGroup = StoreOrder::getOrderPriceGroup($cartInfo, $addr);
         if ($priceGroup === false) {
@@ -123,6 +131,10 @@ class StoreOrderController
             ['shipping_type', 1],
         ], $request, true);
         $payType = strtolower($payType);
+
+        $addr = UserAddress::where('uid', $uid)->where('id', $addressId)->find();
+        if(empty($addr))return app('json')->fail('请选择收货地址!');
+
         if ($bargainId) {
             $bargainUserTableId = StoreBargainUser::getBargainUserTableId($bargainId, $uid);//TODO 获取用户参与砍价表编号
             if (!$bargainUserTableId)
