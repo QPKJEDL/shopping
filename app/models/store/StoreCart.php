@@ -9,6 +9,7 @@ namespace app\models\store;
 
 use app\admin\model\store\StoreProductAttrValue;
 use app\admin\model\system\SystemGroupData;
+use app\admin\model\store\StoreCategory;
 use crmeb\basic\BaseModel;
 use crmeb\services\UtilService;
 use crmeb\traits\ModelTrait;
@@ -352,5 +353,63 @@ class StoreCart extends BaseModel
         return self::whereIn('a.id', $cart_id)->alias('a')->order('a.id desc')
             ->join('store_product p', 'p.id = a.product_id')->value('p.image');
     }
+
+
+    /*---new code---start---
+    /*
+     * 根据购物成内商品数组，判断是否为虚实混合
+     */
+    public static function isMixed($cartList){
+        $real=0;
+        $fake=0;
+        //虚拟分类数组
+        $fakeList=StoreCategory::where("pid",'=',52)->field('id')->select()->toArray();
+        $fakeIds=array_column($fakeList,'id');
+        foreach ($cartList as $key => $value){
+            $cateList=self::getProCateIds($cartList[$key]["product_id"]); //获取改商品的分类数组
+            $isFake=self::isItFake($cateList,$fakeIds);
+            if($isFake){
+                $fake+=1;
+            }else if(!$isFake){
+                $real+=1;
+            }
+        }
+
+        if($real>0&&$fake>0){
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    /*
+     * 商品是否为虚拟分类
+     */
+    protected static function isItFake($cateList,$fakeIds){
+        foreach ($cateList as $key => $value) {
+            if (in_array((string)$value,$fakeIds)) {
+                return true;
+                break;
+            }else{
+                return false;
+            }
+        }
+    }
+
+    /*
+     * 获取商品的分类ID数组
+     */
+    protected static function getProCateIds($productId){
+        $proCateIds=StoreProduct::field("id,cate_id")->select()->toArray();
+        foreach ($proCateIds as $key =>$value){
+            if($value["id"]==$productId){
+                $cate=explode(",",$value["cate_id"]);
+                return $cate;
+                break;
+            }
+        }
+    }
+    //new-code-end
+
 
 }
